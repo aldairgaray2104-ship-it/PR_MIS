@@ -1,0 +1,254 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Cobros, Proyecciones y Aranceles</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-area">
+          <i class="fa-solid fa-chart-line logo-icon"></i>
+          <div>
+            <h1>PR MIS</h1>
+            <p class="subtitle">Detalle de Cobros y Simulador de Aranceles</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        <!-- Servidor / DB Status -->
+        <div id="db-status-badge" class="status-badge">
+          <span class="status-dot"></span>
+          <span class="status-text">Cargando...</span>
+        </div>
+        <div class="date-badge">
+          <i class="fa-regular fa-calendar"></i>
+          <span id="current-date-text">Julio 2026</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Global Stats Overview -->
+    <section class="stats-grid">
+      <div class="stat-card border-glow blue">
+        <div class="stat-icon"><i class="fa-solid fa-wallet"></i></div>
+        <div class="stat-info">
+          <h3>Total Facturación (Meta)</h3>
+          <p id="global-meta" class="stat-value">$0.00</p>
+          <span class="stat-meta">Objetivo mensual global</span>
+        </div>
+      </div>
+      
+      <div class="stat-card border-glow green">
+        <div class="stat-icon"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+        <div class="stat-info">
+          <h3>Avance de Cobro</h3>
+          <p id="global-avance" class="stat-value">$0.00</p>
+          <div class="progress-container">
+            <div id="global-progress-bar" class="progress-bar" style="width: 0%"></div>
+          </div>
+          <span id="global-pct-logro" class="stat-meta">0.00% logrado</span>
+        </div>
+      </div>
+
+      <div class="stat-card border-glow purple">
+        <div class="stat-icon"><i class="fa-solid fa-bullseye-arrow"></i></div>
+        <div class="stat-info">
+          <h3>Proyección Cierre</h3>
+          <p id="global-proyeccion" class="stat-value">$0.00</p>
+          <div class="progress-container">
+            <div id="global-projection-bar" class="progress-bar" style="width: 0%"></div>
+          </div>
+          <span id="global-pct-alcance" class="stat-meta">0.00% alcance proyectado</span>
+        </div>
+      </div>
+
+      <div class="stat-card border-glow orange">
+        <div class="stat-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+        <div class="stat-info">
+          <h3>Déficit / Superávit</h3>
+          <p id="global-deficit" class="stat-value">$0.00</p>
+          <span id="global-deficit-desc" class="stat-meta">Diferencia proyectada</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Workspace Layout -->
+    <div class="workspace-layout">
+      
+      <!-- Left Content: Dynamic Hierarchical Table & Charts -->
+      <main class="main-content">
+        
+        <!-- Controls & Filters Bar -->
+        <div class="table-actions">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="client-search" placeholder="Buscar cliente...">
+          </div>
+          
+          <div class="filter-group">
+            <button class="filter-btn active" data-filter="all">Todos</button>
+            <button class="filter-btn" data-filter="BRADESCO">Bradesco</button>
+            <button class="filter-btn" data-filter="INVEX">Invex</button>
+            <button class="filter-btn" data-filter="CAJA_MORELIA_VALLADOLID">Caja Morelia</button>
+          </div>
+        </div>
+
+        <!-- Main Tree Table Panel -->
+        <div class="panel table-panel">
+          <div class="table-wrapper">
+            <table class="hierarchical-table" id="payments-table">
+              <thead>
+                <tr>
+                  <th class="col-expand-toggle"></th>
+                  <th class="col-portfolio text-left">PORTAFOLIO / CLIENTE</th>
+                  <th class="col-facturacion text-right">FACTURACION</th>
+                  <th class="col-avance text-right">AVANCE</th>
+                  <th class="col-status text-center">ESTADO</th>
+                  <th class="col-logro text-right">% LOGRO</th>
+                  <th class="col-prom-diario text-right">PROM. DIARIO</th>
+                  <th class="col-proyeccion text-right">PROYECCION</th>
+                  <th class="col-alcance text-right">ALCANCE</th>
+                  <th class="col-deficit text-right">DEFICIT</th>
+                </tr>
+              </thead>
+              <tbody id="table-body">
+                <!-- Rows injected dynamically by JS -->
+                <tr>
+                  <td colspan="10" class="text-center py-4">Cargando datos...</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr id="table-footer-row" class="footer-row">
+                  <!-- Totals injected by JS -->
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          
+          <!-- Legend -->
+          <div class="table-legend">
+            <span><strong>Leyenda de Estados:</strong></span>
+            <span class="legend-item"><span class="bullet green"></span> Cumplido (≥100%)</span>
+            <span class="legend-item"><span class="bullet orange"></span> Cerca (80% - 99.9%)</span>
+            <span class="legend-item"><span class="bullet red"></span> Alerta (<80%)</span>
+          </div>
+        </div>
+
+        <!-- Analytical Charts Section -->
+        <div class="panel charts-panel">
+          <div class="panel-header">
+            <h2><i class="fa-solid fa-chart-simple"></i> Comparativa de Rendimiento</h2>
+            <p>Meta vs Avance por Portafolio</p>
+          </div>
+          <div class="chart-container">
+            <canvas id="performance-chart"></canvas>
+          </div>
+        </div>
+      </main>
+
+      <!-- Right Sidebar: Simulator, Aranceles and Leaderboard -->
+      <aside class="sidebar">
+        
+        <!-- Simulator Widget -->
+        <div class="panel widget simulator-widget border-glow">
+          <div class="widget-header">
+            <h2><i class="fa-solid fa-sliders"></i> Simulador</h2>
+            <span class="badge simulator-badge">Activo</span>
+          </div>
+          <div class="widget-content">
+            
+            <!-- Projection Type Select -->
+            <div class="form-group">
+              <label for="sim-projection-type">Método de Proyección</label>
+              <select id="sim-projection-type" class="custom-select">
+                <option value="linear">Proyección Lineal (Tendencia)</option>
+                <option value="static">Proyección Estática (Avance Actual)</option>
+              </select>
+              <small class="form-help">Lineal calcula el cierre según la velocidad de cobro diario.</small>
+            </div>
+
+            <!-- Days Slider -->
+            <div class="form-group">
+              <div class="slider-labels">
+                <label>Días Transcurridos</label>
+                <span id="sim-days-val" class="slider-val">20 / 31</span>
+              </div>
+              <input type="range" id="sim-days-slider" min="1" max="31" value="20" class="custom-range">
+              <div class="slider-ticks">
+                <span>Día 1</span>
+                <span>Día 15</span>
+                <span>Día 31</span>
+              </div>
+            </div>
+
+            <!-- Collection Speed Slider -->
+            <div class="form-group">
+              <div class="slider-labels">
+                <label>Velocidad de Cobro</label>
+                <span id="sim-speed-val" class="slider-val">+0% (1.0x)</span>
+              </div>
+              <input type="range" id="sim-speed-slider" min="50" max="200" value="100" class="custom-range">
+              <div class="slider-ticks">
+                <span>-50%</span>
+                <span>Normal</span>
+                <span>+100%</span>
+              </div>
+            </div>
+
+            <button id="reset-sim-btn" class="btn btn-secondary btn-block">
+              <i class="fa-solid fa-rotate-left"></i> Restablecer Valores
+            </button>
+          </div>
+        </div>
+
+        <!-- Tariff Progression Detail Widget -->
+        <div class="panel widget tariff-widget">
+          <div class="widget-header">
+            <h2><i class="fa-solid fa-percent"></i> Progreso de Arancel</h2>
+          </div>
+          <div id="tariff-detail-container" class="widget-content">
+            <div class="no-selection-message">
+              <i class="fa-solid fa-hand-pointer"></i>
+              <p>Selecciona un cliente de la tabla para analizar su arancel y comisiones.</p>
+            </div>
+            <!-- Populated dynamically by JS when row is clicked -->
+          </div>
+        </div>
+
+        <!-- Leaderboard (Positions) Widget -->
+        <div class="panel widget leaderboard-widget">
+          <div class="widget-header">
+            <h2><i class="fa-solid fa-trophy"></i> Rankings y Posiciones</h2>
+            <span class="badge info-badge">% Logro</span>
+          </div>
+          <div class="widget-content">
+            <ol class="leaderboard-list" id="leaderboard-list">
+              <!-- Populated dynamically by JS -->
+              <li class="text-center py-2 text-muted">Cargando ranking...</li>
+            </ol>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
