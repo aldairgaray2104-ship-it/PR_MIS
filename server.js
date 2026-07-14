@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const mysql = require('mysql2/promise');
 const cors = require('cors');
 require('dotenv').config();
@@ -16,13 +16,15 @@ const dbConfig = {
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'pr_mis_db',
-  port: parseInt(process.env.DB_PORT || '3306')
+  port: parseInt(process.env.DB_PORT || '3306'),
+  connectTimeout: 2000 // Fails fast in serverless environment if host is unreachable
 };
 
 let pool = null;
 let isDemoMode = false;
 
 async function initDB() {
+  if (pool || isDemoMode) return; // Prevent multiple initializations in serverless environment
   try {
     pool = mysql.createPool({
       ...dbConfig,
@@ -135,6 +137,12 @@ function calculateArancelDetails(grupo, pctLogro, meta, avance, arancelesList) {
     faltanteMonto: parseFloat(faltanteMonto.toFixed(2))
   };
 }
+
+// Middleware para asegurar que la base de datos esté inicializada en cada petición (útil para serverless)
+app.use(async (req, res, next) => {
+  await initDB();
+  next();
+});
 
 // Endpoint para el resumen y tabla de portafolios
 app.get('/api/dashboard', async (req, res) => {
@@ -407,7 +415,11 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-app.listen(PORT, async () => {
-  await initDB();
-  console.log(`[SERVER] Servidor corriendo en http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, async () => {
+    await initDB();
+    console.log(`[SERVER] Servidor corriendo en http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
