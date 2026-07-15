@@ -23,6 +23,7 @@ const dbConfig = {
 
 let pool = null;
 let isDemoMode = false;
+let dbError = null; // Store database error to expose in config endpoint for debugging
 
 async function initDB() {
   if (pool || isDemoMode) return; // Prevent multiple initializations in serverless environment
@@ -40,6 +41,7 @@ async function initDB() {
   } catch (error) {
     console.warn(`[WARNING] No se pudo conectar a MySQL. Iniciando en MODO DEMO.`);
     console.warn(`[REASON] ${error.message}`);
+    dbError = error.message;
     isDemoMode = true;
   }
 }
@@ -409,6 +411,7 @@ app.get('/api/rankings', async (req, res) => {
 app.get('/api/config', (req, res) => {
   res.json({
     isDemoMode,
+    dbError,
     dbConfigured: !!process.env.DB_HOST,
     dbHost: dbConfig.host,
     dbName: dbConfig.database,
