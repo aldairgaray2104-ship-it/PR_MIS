@@ -18,7 +18,10 @@ const dbConfig = {
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'pr_mis_db',
   port: parseInt(process.env.DB_PORT || '3306'),
-  connectTimeout: 2000 // Fails fast in serverless environment if host is unreachable
+  connectTimeout: 5000, // Timeout set to 5s for remote DB connection
+  ssl: {
+    rejectUnauthorized: false // Required for Aiven SSL connection without custom CA file
+  }
 };
 
 let pool = null;
