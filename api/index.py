@@ -14,7 +14,16 @@ CORS(app)
 
 # Configuración de base de datos
 DB_HOST = os.getenv('DB_HOST', 'localhost')
-DB_USER = os.getenv('DB_USER', 'root')
+
+# Sanitizar DB_HOST si el usuario colocó http://, https:// o barra diagonal final
+if DB_HOST.startswith('http://'):
+    DB_HOST = DB_HOST[7:]
+elif DB_HOST.startswith('https://'):
+    DB_HOST = DB_HOST[8:]
+if DB_HOST.endswith('/'):
+    DB_HOST = DB_HOST[:-1]
+
+DB_USER = os.getenv('DB_USER', 'avnadmin')
 DB_PASSWORD = os.getenv('DB_PASSWORD', '')
 DB_NAME = os.getenv('DB_NAME', 'pr_mis_db')
 try:
