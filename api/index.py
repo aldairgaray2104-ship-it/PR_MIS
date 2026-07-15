@@ -12,8 +12,8 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Configuración de base de datos
-DB_HOST = os.getenv('DB_HOST', 'localhost')
+# Configuración de base de datos (con soporte para variaciones de mayúsculas/minúsculas)
+DB_HOST = os.getenv('DB_HOST') or os.getenv('db_host') or 'localhost'
 
 # Sanitizar DB_HOST si el usuario colocó http://, https:// o barra diagonal final
 if DB_HOST.startswith('http://'):
@@ -23,13 +23,13 @@ elif DB_HOST.startswith('https://'):
 if DB_HOST.endswith('/'):
     DB_HOST = DB_HOST[:-1]
 
-DB_USER = os.getenv('DB_USER', 'avnadmin')
-DB_PASSWORD = os.getenv('DB_PASSWORD', '')
-DB_NAME = os.getenv('DB_NAME', 'pr_mis_db')
+DB_USER = os.getenv('DB_USER') or os.getenv('db_user') or 'avnadmin'
+DB_PASSWORD = os.getenv('DB_PASSWORD') or os.getenv('dB_PASSWORD') or os.getenv('db_password') or ''
+DB_NAME = os.getenv('DB_NAME') or os.getenv('db_name') or 'pr_mis_db'
 try:
-    DB_PORT = int(os.getenv('DB_PORT', '3306'))
+    DB_PORT = int(os.getenv('DB_PORT') or os.getenv('db_port') or '10160')
 except ValueError:
-    DB_PORT = 3306
+    DB_PORT = 10160
 
 is_demo_mode = False
 db_error = None
@@ -449,6 +449,7 @@ def get_config():
         'isDemoMode': is_demo_mode,
         'dbError': db_error,
         'dbConfigured': DB_HOST != 'localhost',
+        'dbPasswordConfigured': bool(DB_PASSWORD),
         'dbHost': DB_HOST,
         'dbName': DB_NAME,
         'pythonVersion': sys.version
