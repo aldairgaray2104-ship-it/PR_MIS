@@ -4,6 +4,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
+app.set('trust proxy', true); // Trust Vercel's proxy for HTTPS detection
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
